@@ -1,0 +1,279 @@
+<template>
+  <j-vxe-table
+      toolbar
+      :importBtn="importBtn"
+      :toolbarConfig="toolbarConfig"
+      keep-source
+      async-remove
+      ref="xTable"
+      row-selection
+      :loading="loading"
+      :columns="columns"
+      :dataSource="dataSource"
+      @loadDataUpload="loadDataUpload"
+      @save="handleTableSave"
+      @remove="handleTableRemove"
+      @edit-closed="handleEditClosed"
+      @pageChange="handlePageChange"
+      @selectRowChange="handleSelectRowChange"
+      @upload="uploadss"
+  >
+    <template v-slot:call="props">
+      <a-time-picker :default-value="moment(props.value, 'HH:mm:ss')"    @openChange="handleOpenChange(props)" @change="change">
+      </a-time-picker>
+    </template>
+  </j-vxe-table>
+</template>
+
+<script>
+import { getAction, postAction, putAction } from '@api/manage'
+import { JVXETypes } from '@/components/jeecg/JVxeTable'
+import moment from 'moment';
+// 即时保存示例
+export default {
+  name: 'JDemo',
+  props:['columns','dataSource','formData','importBtn'],
+  data() {
+    return {
+      columnss:[],
+      open: false,
+      indexprop:{},
+      // 工具栏的按钮配置
+      toolbarConfig: {
+        // add 新增按钮；remove 删除按钮；clearSelection 清空选择按钮
+        btn: ['add', 'save', 'remove', 'clearSelection']
+      },
+      // 是否正在加载
+      loading: false,
+      // 分页器参数
+      pagination: {
+        // 当前页码
+        current: 1,
+        // 每页的条数
+        pageSize: 10,
+        // 数据总数（目前并不知道真实的总数，所以先填写0，在后台查出来后再赋值）
+        total: 0,
+      },
+      // 选择的行
+      selectedRows: [],
+      // 数据源，控制表格的数据
+      // 列配置，控制表格显示的列
+      // columns: [
+      //   {key: 'call', title: '时间',type: JVXETypes.time,slotName:'call',open:false},
+      //   {key: 'len', title: '事件', type: JVXETypes.input},
+      //   {key: 'ton', title: '具体落实情况',   type: JVXETypes.input},
+      //   {key: 'payer', title: '席位名称',  type: JVXETypes.input},
+      //   {
+      //     key: 'company',
+      //     title: '值班员',
+      //     // 最小宽度，与宽度不同的是，这个不是固定的宽度，如果表格有多余的空间，会平均分配给设置了 minWidth 的列
+      //     // 如果要做占满表格的列可以这么写
+      //     type: JVXETypes.input
+      //   },
+      //   {key: 'trend', title: '备注',type: JVXETypes.input},
+      // ],
+      // 查询url地址
+      url: {
+        getData: '/reportForm/list',
+        list: '/reportForm/list',
+        // 模拟保存单行数据（即时保存）
+        saveRow: '/mock/vxe/immediateSaveRow',
+        // 模拟保存整个表格的数据
+        saveAll: '/southTable/reportFromDataSave',
+      },
+    }
+  },
+  mounted() {
+  },
+  watch:{
+    columns: {
+      handler(newValue, oldValue) {
+        this.columns = newValue
+        this.init(newValue)
+      },
+      deep: true
+    }
+  },
+  methods: {
+    init(arr) {
+      console.log(arr)
+      this.columns = arr
+    },
+    loadDataUpload(obj) {
+      this.$emit('loadDataUpload',obj)
+    },
+    uploadss(obj) {
+      console.log(obj)
+    },
+    moment,
+    validAllEvent () {
+      return this.$refs.xTable.getTableData()
+    },
+    change(time, timeString) {
+      console.log(time, timeString);
+      this.indexprop.value = timeString
+      this.indexprop.params.call = timeString
+      this.indexprop.row.call = timeString
+    },
+    handleOpenChange(props) {
+      console.log(props)
+      this.indexprop = props
+    },
+    handleClose(props) {
+      console.log(1)
+    },
+    handleView(props) {
+      // 参数介绍：
+      // props.value          当前单元格的值
+      // props.row            当前行的数据
+      // props.rowId          当前行ID
+      // props.rowIndex       当前行下标
+      // props.column         当前列的配置
+      // props.columnIndex    当前列下标
+      // props.$table         vxe实例，可以调用vxe内置方法
+      // props.target         JVXE实例，可以调用JVXE内置方法
+      // props.caseId         JVXE实例唯一ID
+      // props.scrolling      是否正在滚动
+      // props.triggerChange  触发change事件，用于更改slot的值
+      console.log(props, props)
+    },
+    getValuess({$table, target}) {
+      $table.validate().then((errMap) => {
+        // 校验通过
+        if (!errMap) {
+          // 获取所有数据
+          let tableData = target.getTableData()
+          console.log('当前保存的数据是：', tableData)
+          // 获取新增的数据
+          let newData = target.getNewData()
+          console.log('-- 新增的数据：', newData)
+          // 获取删除的数据
+          let deleteData = target.getDeleteData()
+          console.log('-- 删除的数据：', deleteData)
+
+        }
+      })
+    },
+    handleDelete(props) {
+      // 使用实例：删除当前操作的行
+      props.target.removeRows(props.row)
+    },
+
+
+    // 【整体保存】点击保存按钮时触发的事件
+    handleTableSave({$table, target}) {
+      console.log($table)
+      console.log(target)
+      if(this.formData.type == 'SynthesizeLogging'||this.formData.type=='WeekStatistics') {
+        // 校验整个表格
+        $table.validate().then((errMap) => {
+          // 校验通过
+          if (!errMap) {
+            // 获取所有数据
+            let tableData = target.getTableData()
+            console.log('当前保存的数据是：', tableData)
+            // 获取新增的数据
+            let newData = target.getNewData()
+            console.log('-- 新增的数据：', newData)
+            // 获取删除的数据
+            let deleteData = target.getDeleteData()
+            console.log('-- 删除的数据：', deleteData)
+            var obj = {
+              templateType: this.formData.template,
+              reportFromType: this.formData.type,
+              list:tableData
+            }
+            if(this.formData.type == 'SynthesizeLogging') {
+              obj.time = this.formData.createTime
+            }
+
+            // 【模拟保存】
+            this.loading = true
+            postAction(this.url.saveAll, obj).then(res => {
+              if (res.success) {
+                this.$message.success(`保存成功！`)
+              } else {
+                this.$message.warn(`保存失败：` + res.message)
+              }
+            }).finally(() => {
+              this.loading = false
+            })
+          }
+        })
+      }else {
+          this.$emit('getDatas')
+      }
+
+    },
+
+    // 触发单元格删除事件
+    handleTableRemove(event) {
+
+      // 把 event.deleteRows 传给后台进行删除（注意：这里不会传递前端逻辑新增的数据，因为不需要请求后台删除）
+      console.log('待删除的数据: ', event.deleteRows)
+      // 也可以只传ID，因为可以根据ID删除
+      let deleteIds = event.deleteRows.map(row => row.id)
+      console.log('待删除的数据ids: ', deleteIds)
+
+      // 模拟请求后台删除
+      this.loading = true
+      window.setTimeout(() => {
+        this.loading = false
+        this.$message.success('删除成功')
+        // 假设后台返回删除成功，必须要调用 confirmRemove() 方法，才会真正在表格里移除（会同时删除选中的逻辑新增的数据）
+        event.confirmRemove()
+      }, 1000)
+    },
+
+    // 单元格编辑完成之后触发的事件
+    handleEditClosed(event) {
+      let {$table, row, column} = event
+
+      let field = column.property
+      let cellValue = row[field]
+      // 判断单元格值是否被修改
+      if ($table.isUpdateByRow(row, field)) {
+        // 校验当前行
+        $table.validate(row).then((errMap) => {
+          // 校验通过
+          if (!errMap) {
+            // 【模拟保存】
+            let hideLoading = this.$message.loading(`正在保存"${column.title}"`, 0)
+            console.log('即时保存数据：', row)
+            putAction(this.url.saveRow, row).then(res => {
+              if (res.success) {
+                this.$message.success(`"${column.title}"保存成功！`)
+                // 局部更新单元格为已保存状态
+                $table.reloadRow(row, null, field)
+              } else {
+                this.$message.warn(`"${column.title}"保存失败：` + res.message)
+              }
+            }).finally(() => {
+              hideLoading()
+            })
+          }
+        })
+      }
+    },
+
+    // 当分页参数变化时触发的事件
+    handlePageChange(event) {
+      // 重新赋值
+      this.pagination.current = event.current
+      this.pagination.pageSize = event.pageSize
+      // 查询数据
+      this.loadData()
+    },
+
+    // 当选择的行变化时触发的事件
+    handleSelectRowChange(event) {
+      this.selectedRows = event.selectedRows
+    },
+
+  },
+}
+</script>
+
+<style scoped>
+
+</style>

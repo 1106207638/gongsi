@@ -1,0 +1,526 @@
+<template>
+  <div class="center-flex-box">
+    <div class="card-box" id="card" style="width: 300px">
+      <div class="box-title">信息筛选</div>
+      <div class="box-content">
+        <a-form
+          layout="inline"
+          :labelCol="{ span: 24, offset: 0 }"
+          :wrapperCol="{ span: 24, offset: 0 }"
+        >
+          <a-row :gutter="24">
+            <a-col :xl="24" :lg="24" :md="24" :sm="24">
+              <a-form-item
+                label="抽检单位数量"
+                :labelCol="{ span: 24, offset: 0 }"
+                :wrapperCol="{ span: 24, offset: 0 }"
+              >
+                <a-input
+                  v-model="param.checkDepNum"
+                  placeholder="请输入抽检单位数量"
+                  :max-length="25"
+                />
+              </a-form-item>
+            </a-col>
+          </a-row>
+
+          <a-row :gutter="24">
+            <a-col :xl="24" :lg="24" :md="24" :sm="24">
+              <a-form-item label="检查方式">
+                <j-dict-select-tag
+                  v-model="param.checkWay"
+                  style="width: 100%"
+                  placeholder="请选择检查方式"
+                  dictCode="check_way"
+                />
+              </a-form-item>
+            </a-col>
+          </a-row>
+
+          <a-row :gutter="24">
+            <a-col :xl="24" :lg="24" :md="24" :sm="24">
+              <a-form-item label="检查分配策略">
+                <j-dict-select-tag
+                  v-model="param.checkStrategy"
+                  style="width: 100%"
+                  placeholder="请选择检查规则"
+                  dictCode="check_strategy"
+                />
+              </a-form-item>
+            </a-col>
+          </a-row>
+          <a-row :gutter="24">
+            <a-col :xl="12" :lg="24" :md="24" :sm="24">
+              <a-button
+                type="primary"
+                block
+                style="margin-top: 20px"
+                @click="confirmCheck"
+              >
+                抽检
+              </a-button>
+            </a-col>
+
+            <a-col :xl="12" :lg="24" :md="24" :sm="24">
+              <a-button
+                type="primary"
+                block
+                style="margin-top: 20px"
+                @click="commitCheckTask"
+              >
+                提交
+              </a-button>
+            </a-col>
+          </a-row>
+        </a-form>
+      </div>
+
+      <!-- 搜索 -->
+      <div
+        style="
+          width: 800px;
+          background-color: rgb(230, 247, 255);
+          z-index: 9999;
+        "
+        id="table"
+        v-show="param.checkStrategy == 'Manumotive'"
+      >
+        <div>
+          <a-input-search
+            v-model="troopsName"
+            placeholder="输入单位名称"
+            style="width: 180px; margin-left: 5px"
+            @search="onSearch"
+          />
+          <a href="#" style="margin-left: 50px" @click="show">{{ showName }}</a>
+        </div>
+        <a-table
+          :bordered="true"
+          :columns="columns1"
+          :data-source="data"
+          :expandIconColumnIndex="1"
+          :row-selection="{
+            selectedRowKeys: selectedRowKeys,
+            onChange: onChange,
+            getCheckboxProps: getCheckboxProps,
+            flexed: true,
+          }"
+          :scroll="{ y: 240 }"
+          :pagination="false"
+        />
+      </div>
+    </div>
+
+    <div class="card-box" style="flex: 1; margin-left: 20px">
+      <div class="box-title">数据展示</div>
+      <div class="box-content">
+        <div>
+          <a-table
+            ref="table"
+            size="default"
+            :columns="columns"
+            :dataSource="dataSource"
+          >
+            <span slot="action" slot-scope="text, record">
+              <a @click="replaceTask(record)">更换</a>
+              <a-divider type="vertical" />
+              <a @click="deleteTask(record)">删除</a>
+            </span>
+          </a-table>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { getAction, postAction } from "@/api/manage";
+import STable from "@/components/table/";
+import moment from "moment";
+
+export default {
+  name: "zhrz",
+  mixins: ["JeecgListMixin"],
+  components: {
+    STable,
+  },
+  data() {
+    return {
+      id: "",
+      // 选中的ids
+      selectedRowKeys: [],
+      search: "",
+      // 搜索区域
+      param: {},
+      // 列的信息
+      columns: [
+        {
+          title: "受检单位",
+          dataIndex: "checkDept",
+          align: "center",
+        },
+        {
+          title: "隶属上级单位",
+          dataIndex: "subordinateUnits",
+          align: "center",
+        },
+        {
+          title: "本年度检查次数",
+          dataIndex: "annualCheckNumber",
+          align: "center",
+        },
+        {
+          title: "问题总数",
+          dataIndex: "checkResultStatus",
+          align: "center",
+        },
+        {
+          title: "操作",
+          dataIndex: "action",
+          align: "center",
+          scopedSlots: { customRender: "action" },
+        },
+      ],
+      // 右侧的数据
+      dataSource: [],
+      // 左侧的列信息
+      columns1: [
+        {
+          title: "单位名称",
+          dataIndex: "checkDept",
+          align: "center",
+          width: "237px",
+        },
+        {
+          title: "本年度检查次数",
+          dataIndex: "annualCheckNumber",
+          align: "center",
+        },
+        {
+          title: "问题数量",
+          dataIndex: "checkResultStatus",
+          align: "center",
+        },
+      ],
+      // 左侧的数据
+      data: [],
+      url: {
+        confirmCheck: "/southCheckTask/confirmCheck",
+        troopsList: "/southCheckTask/searchTroopsByName",
+        commitCheckTask: "/southCheckTask/commitCheckTask",
+      },
+      troopsName: "",
+      dataLoading: false,
+      busy: false,
+      pageNum: 1,
+      pageLength: 10,
+      showName: ">>展开",
+      showStyle: true,
+      // 选中的数据
+      selectedArr: [],
+    };
+  },
+  mounted() {
+    this.onSearch();
+    document.getElementById("card").style.overflowX = "hidden";
+  },
+  methods: {
+    // 删除任务
+    deleteTask(record) {
+      this.dataSource.splice(record.index, 1);
+      this.$message.success(record.checkDept + "下架成功!");
+      for (let i = 0; i < this.dataSource.length; i++) {
+        this.dataSource[i].index = i;
+      }
+    },
+    // 替换任务
+    replaceTask(record) {
+      let index = record.index;
+      let param = this.param;
+      if (this.param.checkWay === undefined) {
+        this.$message.error("检查方式为必填项!");
+        return;
+      }
+
+      if (this.param.checkStrategy === undefined) {
+        this.$message.error("检查分配策略为必填项!");
+        return;
+      }
+      param.checkDepNum = 1;
+      postAction(this.url.confirmCheck, param).then((res) => {
+        let code = res.code;
+        if (code == 200) {
+          let result = res.result[0];
+          result.index = index;
+          this.dataSource.splice(index, 1, result);
+          this.$message.success("更换成功!");
+        } else {
+          this.$message.error(res.message);
+        }
+      });
+    },
+    // 确认抽检
+    confirmCheck() {
+      if (this.param.checkStrategy === "Manumotive") {
+        if (this.selectedArr.length == 0) {
+          this.$message.error("至少要选择一家单位!");
+          return;
+        }
+        if (this.param.checkWay == undefined) {
+          this.$message.error("检查方式不能为空!");
+          return;
+        }
+        //处理数组
+        for (let i = 0; i < this.selectedArr.length; i++) {
+          //处理数据
+          this.selectedArr[i].checkStatus = "NotCheck";
+          this.selectedArr[i].checkWay = this.param.checkWay;
+        }
+
+        this.$message.success("手动选择检查任务成功!");
+        if (this.search == "search") {
+          for (let i = 0; i < this.selectedArr.length; i++) {
+            let selected = this.selectedArr[i];
+            let falg = false;
+            for (let i1 = 0; i1 < this.dataSource.length; i1++) {
+              let data = this.dataSource[i1];
+              if (data.checkDept == selected.checkDept) {
+                falg = true;
+                break;
+              }
+            }
+          }
+          this.onSearch();
+          this.search = "";
+        } else {
+          this.dataSource = this.selectedArr;
+          console.info(this.selectedArr)
+        }
+        return;
+      }
+      if (this.param.checkDepNum === undefined) {
+        this.$message.error("抽检单位数量为必填项!");
+        return;
+      }
+
+      if (this.param.checkWay === undefined) {
+        this.$message.error("检查方式为必填项!");
+        return;
+      }
+
+      if (this.param.checkStrategy === undefined) {
+        this.$message.error("检查分配策略为必填项!");
+        return;
+      }
+      console.log(this.param)
+      postAction(this.url.confirmCheck, this.param).then((res) => {
+        let code = res.code;
+        if (code == 200) {
+          for (let i = 0; i < res.result.length; i++) {
+            res.result[i].index = i;
+          }
+          this.dataSource = res.result;
+          this.$message.success("生成" + res.result.length + "条抽检任务!");
+          this.button = false;
+        } else {
+          this.$message.error(res.message);
+        }
+      });
+    },
+
+    // 提交检查任务
+    commitCheckTask() {
+      let length = this.dataSource.length;
+      let checkStrategy = this.param.checkStrategy;
+      if (checkStrategy == "Manumotive" && length < this.param.checkDepNum) {
+        this.$message.error("请选择足够的单位数量!");
+        return;
+      }
+      if (this.dataSource.length == 0) {
+        this.$message.error("请抽检至少一条检查任务!");
+        return;
+      }
+      for (let i = 0; i < length; i++) {
+        this.dataSource[i].checkResultStatus = 0;
+      }
+      postAction(this.url.commitCheckTask, this.dataSource).then((res) => {
+        if (res.code == 200) {
+          this.$message.success("提交成功!");
+          this.param = {};
+          this.dataSource = [];
+          this.onSearch();
+          this.$router.push("/dutyCheck");
+        } else {
+          this.$message.error("提交失败!");
+        }
+      });
+    },
+
+    onChange(selectedRowKeys, selectedRows) {
+      this.selectedRowKeys = selectedRowKeys;
+      this.selectedArr = selectedRows;
+      console.info(this.selectedArr);
+    },
+
+    getCheckboxProps: (record) => {
+      return {
+        props: {
+          disabled: (record.key + "").length == 1 ? true : false, // Column configuration not to be checked
+          name: record.checkDept,
+        },
+      };
+    },
+
+    // 搜索框搜索
+    onSearch() {
+            this.dataSource =[]
+      getAction(
+        this.url.troopsList +
+          "?troopsName=" +
+          this.troopsName +
+          "&pageNum=" +
+          this.pageNum +
+          "&pageLength=" +
+          this.pageLength,
+        null
+      ).then((res) => {
+        let result = res.result;
+        if (result[0].subordinateUnits != undefined) {
+          for (let i = 0; i < result.length; i++) {
+            result[i]["key"] = "0" + i;
+          }
+          this.search = "search";
+        } else {
+          for (let i = 0; i < result.length; i++) {
+            result[i]["key"] = i;
+            let children = result[i].children;
+            if (children) {
+              for (let i1 = 0; i1 < children.length; i1++) {
+                children[i1]["key"] = i + "" + i1;
+              }
+            }
+          }
+        }
+
+        this.data = result;
+      });
+    },
+    // 控制搜索框右侧展示
+    show() {
+      let div = document.getElementById("table");
+      if (this.showStyle) {
+        div.className = "table-position";
+        this.showName = "<<";
+        this.showStyle = false;
+      } else {
+        div.className = "";
+        this.showName = ">>展开";
+        this.showStyle = true;
+      }
+    },
+    moment,
+  },
+  watch: {
+    // 勾选已抽检单位
+    "param.checkStrategy": function (newVal, oldVal) {
+      if (newVal == "Manumotive") {
+        // 已勾选数组
+        for (let i = 0; i < this.dataSource.length; i++) {
+          let item = this.dataSource[i];
+          //找到父级
+          for (let i1 = 0; i1 < this.data.length; i1++) {
+            if (item.subordinateUnits == this.data[i1].checkDept) {
+              let children = this.data[i1].children;
+              //找到子级数组
+              for (let i2 = 0; i2 < children.length; i2++) {
+                if (children[i2].checkDept == item.checkDept) {
+                  this.selectedRowKeys.push(children[i2].key);
+                  break;
+                }
+              }
+              break;
+            }
+          }
+        }
+      }
+    },
+  },
+};
+</script>
+<style lang="less" scoped>
+.table-position {
+  position: absolute;
+}
+.demo-infinite-container {
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  overflow: auto;
+  padding: 8px 24px;
+  height: 450px;
+}
+.demo-loading-container {
+  position: absolute;
+  bottom: 40px;
+  width: 100%;
+  text-align: center;
+}
+.center-flex-box {
+  display: flex;
+  height: calc(100vh - 160px);
+  justify-content: space-between;
+  .card-box {
+    height: 100%;
+    box-sizing: border-box;
+    background: #fff;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+  }
+}
+.box-title {
+  background: rgba(0, 121, 254, 1);
+  line-height: 2.6rem;
+  color: #fff;
+  font-size: 1.2rem;
+  padding-left: 20px;
+}
+.box-content {
+  padding: 1.3rem;
+}
+.card-item {
+  display: flex;
+  margin: 10px 0;
+}
+.card-item .label {
+  width: 100px;
+}
+/deep/.ant-form-item-control-wrapper {
+  flex: 1;
+}
+.tbottom {
+  display: flex;
+}
+.bi {
+  flex: 1;
+  text-align: center;
+}
+/deep/.ant-checkbox-group-item {
+  display: block;
+}
+.check-box {
+  display: flex;
+}
+.check-box .look {
+  text-align: right;
+  flex: 1;
+  color: #0079fe;
+}
+.check-box .look span {
+  cursor: pointer;
+}
+.ant-form-inline .ant-form-item {
+  width: 100%;
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 0;
+}
+</style>

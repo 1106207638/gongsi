@@ -1,0 +1,645 @@
+  <template>
+    <j-modal
+        :title="title"
+        :width="width"
+        :visible="visible"
+        :fullscreen="true"
+        :confirmLoading="confirmLoading"
+        switchFullscreen
+        @ok="handleOk"
+        @cancel="handleCancel"
+        cancelText="关闭">
+      <a-spin :spinning="confirmLoading">
+        <a-form :form="form">
+          <a-row :gutter="24">
+            <a-col :xl="8" :lg="8" :md="8" :sm="8">
+              <a-form-item label="编码" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                <a-input v-decorator="['code',{
+                   rules: [{ required: true, message: '请输入编码' },{
+                    validator: compareToFirstPassword,
+                   }]
+                }]"></a-input>
+              </a-form-item>
+            </a-col>
+            <a-col :xl="8" :lg="8" :md="8" :sm="8">
+              <a-form-item label="名称" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                <a-input v-decorator="['name',{
+                   rules: [{ required: true, message: '请输入报表名称' }]
+                }]" placeholder="请输入表名称"></a-input>
+              </a-form-item>
+            </a-col>
+            <a-col :xl="8" :lg="8" :md="8" :sm="8">
+              <a-form-item label="数据源" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                <a-select v-decorator="['dbSource',{}]" >
+                  <a-select-option :value="item.value" v-for="(item,index) in sqlType" :key="index">
+                    {{item.text}}
+                  </a-select-option>
+                </a-select>
+              </a-form-item>
+            </a-col>
+          </a-row>
+          <a-row :gutter="24">
+            <a-col :xl="21" :lg="21" :md="21" :sm="21">
+            <a-form-item label="报表SQL" :labelCol="labelCol1" :wrapperCol="wrapperCol1">
+              <j-code-editor
+                  :sqlValue="sqlValue"
+                  language="sql"
+                  v-decorator="['cgrSql',{initialValue: sqlValue ,
+                   rules: [{ required: true, message: '请输入SQL语句' }]}]"
+                  @input="getValue"
+                  :fullScreen="true"
+                  style="min-height: 100px"/>
+            </a-form-item>
+            </a-col>
+            <a-col :xl="3" :lg="3" :md="3" :sm="3">
+              <a-tooltip placement="bottom" title=" 您可以键入“”作为一个参数，这里abc是参数的名称。例如：<br>
+          select * from table where id = ${abc}。<br>
+          select * from table where id like concat('%',${abc},'%')。(mysql模糊查询)<br>
+          select * from table where id like '%'||${abc}||'%'。(oracle模糊查询)<br>
+          select * from table where id like '%'+${abc}+'%'。(sqlserver模糊查询)<br>
+          注：参数只支持动态报表，popup暂不支持" overlayClassName="tootle">
+                <a-icon type="question-circle" />
+              </a-tooltip>
+
+              <a-button type="primary" @click="sqlsend" style="margin-left: 20px">
+                SQL解析
+              </a-button>
+            </a-col>
+          </a-row>
+        </a-form>
+        <a-tabs default-active-key="1" @change="callback">
+          <a-tab-pane key="1" tab="动态报表配置明细">
+            <div style="margin: 10px 0">
+              <a-button  icon="plus" @click="selfadd" type="primary">新增</a-button>
+              <template v-if="selectedRowIds.length > 0">
+                <a-popconfirm
+                    :title="`确定要删除这 ${selectedRowIds.length} 项吗?`"
+                    @confirm="remove"
+                >
+                  <a-button icon="minus" >删除</a-button>
+                </a-popconfirm>
+                <!--              <template >-->
+                <!--                <a-button icon="delete" @click="trigger('clearSelection')">清空选择</a-button>-->
+                <!--              </template>-->
+              </template>
+            </div>
+
+            <j-demo :columns="columns1" ref="demo1" @ok1="ok1" @editsave="saveEdit"  :datas="fields" @handlerRows="selectRows" :toolbar="false" :isonline="true" :issort="true"></j-demo>
+          </a-tab-pane>
+  <!--        <a-tab-pane key="2" tab="报表参数" force-render>-->
+  <!--          <div style="margin: 10px 0">-->
+  <!--            <a-button  icon="plus" @click="paramsadd" type="primary">新增</a-button>-->
+  <!--            <template v-if="selectedRowIds.length > 0">-->
+  <!--              <a-popconfirm-->
+  <!--                  :title="`确定要删除这 ${selectedRowIds.length} 项吗?`"-->
+  <!--                  @confirm="removeparams"-->
+  <!--              >-->
+  <!--                <a-button icon="minus" >删除</a-button>-->
+  <!--              </a-popconfirm>-->
+  <!--              &lt;!&ndash;              <template >&ndash;&gt;-->
+  <!--              &lt;!&ndash;                <a-button icon="delete" @click="trigger('clearSelection')">清空选择</a-button>&ndash;&gt;-->
+  <!--              &lt;!&ndash;              </template>&ndash;&gt;-->
+  <!--            </template>-->
+  <!--          </div>-->
+
+  <!--          <j-demo :columns="columns2" ref="demo2" @ok1="ok2" :datas="params" @editsave="saveEditparams" @handlerRows="selectRows" :toolbar="false" :issort="true"></j-demo>-->
+
+  <!--        </a-tab-pane>-->
+        </a-tabs>
+
+        <div>
+        </div>
+        <template slot="content">
+          您可以键入“”作为一个参数，这里abc是参数的名称。例如：
+          select * from table where id = ${abc}。
+          select * from table where id like concat('%',${abc},'%')。(mysql模糊查询)
+          select * from table where id like '%'||${abc}||'%'。(oracle模糊查询)
+          select * from table where id like '%'+${abc}+'%'。(sqlserver模糊查询)
+          注：参数只支持动态报表，popup暂不支持
+        </template>
+      </a-spin>
+    </j-modal>
+
+  </template>
+
+  <script>
+
+  import {getAction, httpAction} from '@/api/manage'
+  import pick from 'lodash.pick'
+  import {validateDuplicateValue} from '@/utils/util'
+  import JDictSelectTag from "@/components/dict/JDictSelectTag"
+  import {JVXETypes} from "@comp/jeecg/JVxeTable";
+  import JCodeEditor from '@/components/jeecg/JCodeEditor'
+  import JDemo from './jform.vue';
+
+  export default {
+    name: "selfcgreportModule",
+    components: {
+      JDictSelectTag,
+      JDemo,
+      JCodeEditor
+    },
+    prop: {
+      taskId: {
+        type: String,
+        required: true,
+      }
+    },
+    data() {
+      return {
+        isTrue1:false,
+        isTrue2:false,
+        rules: {
+          desc: [{ required: true, message: '请输入SQL语句', trigger: 'blur' }],
+        },
+        sqlValue:'',
+        id:'',
+        // 选中的行数
+        selectedRowIds:[],
+        jcodedditor: {
+          value: `function sayHi(word) {
+    alert(word)
+  }
+  sayHi('hello, world!')`
+        },
+        staticStyle: {
+          color: "red"
+        },
+        columns1: [{
+          title: "字段名",
+          width: "150px",
+          key: "fieldName",
+          type: JVXETypes.input,
+          defaultValue: "",
+          placeholder: "请输入${title}",
+          validateRules: [{
+            required: !0,
+            message: "${title}不能为空"
+          }]
+        },
+          {
+            title: "字段文本",
+            width: "200px",
+            key: "fieldTxt",
+            type: JVXETypes.input,
+            placeholder: "请输入${title}",
+            defaultValue: "",
+            validateRules: [{
+              required: !0,
+              message: "${title}不能为空"
+            }]
+          },
+          {
+            title: "类型",
+            width: "150px",
+            key: "fieldType",
+            type: JVXETypes.select,
+            options: [{
+              title: "数值类型",
+              value: "Integer"
+            },
+              {
+                title: "字符类型",
+                value: "String"
+              },
+              {
+                title: "日期类型",
+                value: "Date"
+              },
+              {
+                title: "时间类型",
+                value: "Datetime"
+              },
+              {
+                title: "长整型",
+                value: "Long"
+              }],
+            defaultValue: "String",
+            placeholder: "请选择${title}",
+            validateRules: [{
+              required: !0,
+              message: "${title}不能为空"
+            }]
+          },
+          {
+            title: "是否显示",
+            width: "100px",
+            key: "isShow",
+            type: JVXETypes.checkbox,
+            customValue: [1, 0],
+            defaultChecked: !0
+          },
+          {
+            title: "值",
+            Width: "100px",
+            key: "value",
+            type: JVXETypes.input,
+            defaultValue: "",
+            placeholder: "请输入${title}"
+          },
+        //   {
+        //     title: "查询模式",
+        //     width: "150px",
+        //     key: "searchMode",
+        //     type: JVXETypes.select,
+        //     options: [{
+        //       title: "单条件查询",
+        //       value: "single"
+        //     },
+        //       {
+        //         title: "范围查询",
+        //         value: "group"
+        //       }],
+        //     defaultValue: "",
+        //     placeholder: "请选择${title}"
+        //   },
+        //   {
+        //     title: "取值表达式",
+        //     width: "160px",
+        //     key: "replaceVal",
+        //     type: JVXETypes.input,
+        //     defaultValue: "",
+        //     placeholder: "请输入${title}"
+        //   },
+        //   {
+        //     title: "字典code",
+        //     width: "200px",
+        //     key: "dictCode",
+        //     type: JVXETypes.input,
+        //     defaultValue: "",
+        //     placeholder: "请输入${title}"
+        //   },
+        //   {
+        //     title: "分组标题",
+        //     width: "200px",
+        //     key: "groupTitle",
+        //     type: JVXETypes.input,
+        //     defaultValue: "",
+        //     placeholder: "请输入${title}"
+        //   },
+        //   {
+        //     title: "是否查询",
+        //     width: "100px",
+        //     key: "isSearch",
+        //     type: JVXETypes.checkbox,
+        //     customValue: ["1", "0"],
+        //     defaultChecked: !1
+        //   },
+        //   {
+        //     title: "合计",
+        //     width: "100px",
+        //     key: "isTotal",
+        //     type: JVXETypes.checkbox,
+        //     customValue: ["1", "0"],
+        //     defaultChecked: !1
+        //   }],
+        // columns2: [{
+        //   width: "23%",
+        //   title: "参数",
+        //   key: "paramName",
+        //   type: JVXETypes.input,
+        //   defaultValue: "",
+        //   placeholder: "请输入${title}",
+        //   validateRules: [{
+        //     required: !0,
+        //     message: "${title}不能为空"
+        //   }]
+        // },
+        //   {
+        //     width: "23%",
+        //     title: "参数文本",
+        //     key: "paramTxt",
+        //     type: JVXETypes.input,
+        //     defaultValue: "",
+        //     placeholder: "请输入${title}",
+        //     validateRules: [{
+        //       required: !0,
+        //       message: "${title}不能为空"
+        //     }]
+        //   },
+        //   {
+        //     width: "23%",
+        //     title: "默认值",
+        //     key: "paramValue",
+        //     type: JVXETypes.input,
+        //     defaultValue: "",
+        //     placeholder: "请输入${title}"
+        //   }
+        ],
+        form: this.$form.createForm(this),
+        title: "操作",
+        width: 1200,
+        visible: false,
+        model: {},
+        labelCol: {
+          xs: {span: 24},
+          sm: {span: 5},
+        },
+        wrapperCol: {
+          xs: {span: 24},
+          sm: {span: 16},
+        },
+        labelCol1: {
+          xs: {span: 24},
+          sm: {span: 2},
+        },
+        wrapperCol1: {
+          xs: {span: 24},
+          sm: {span: 22},
+        },
+        confirmLoading: false,
+        validatorRules: {},
+        url: {
+          add: "online/cgreport/head/add",
+          edit:'online/cgreport/head/editAll',
+          fieldUrl:'online/cgform/field/listByHeadId',
+          yanzheng:'/sys/duplicate/check',
+          sqlsend:'OnlCgreportController/parseSql',
+          sqlType:'/sys/dataSource/options',
+          head:'/online/cgreport/item/listByHeadId',
+          param:'/online/cgreport/param/listByHeadId'
+        },
+        fields:[],
+        params:[],
+        sqlType:[]
+      }
+    },
+    created() {
+        this.getsqlType()
+    },
+    methods: {
+      ok1() {
+        this.isTrue1 = res
+      },
+      ok2() {
+        this.isTrue2 = res
+      },
+      sqlsend() {
+        var code = this.form.getFieldValue('cgrSql')
+        if(code == '') {
+          this.$message.warning('请输入SQL语句');
+        }else{
+          var obj = {
+            sql : code
+          }
+          getAction(this.url.sqlsend, obj).then((res) => {
+            console.log(res)
+            if (res.success) {
+              this.fields = res.result.fields
+              this.params = res.result.params
+            } else {
+              this.$message.warning(res.message);
+            }
+          }).finally(() => {
+          })
+        }
+      },
+      // 获取数据库的类型
+      getsqlType() {
+        var obj = {}
+        getAction(this.url.sqlType, obj).then((res) => {
+          console.log(res)
+          if (res.success) {
+            this.sqlType = res.result
+          } else {
+            this.$message.warning(res.message);
+          }
+        }).finally(() => {
+        })
+      },
+      getValue(code) {
+        setTimeout(() => {
+          this.form.setFieldsValue({
+            'cgrSql': code
+          })
+        }, 0)
+      },
+      compareToFirstPassword(rule, value, callback) {
+        var httpurl = this.url.yanzheng
+        var obj = {
+          tableName: 'onl_cgreport_head',
+          fieldName: 'code',
+          fieldVal: value,
+        }
+        if(value == '') {
+          callback('请输入编码!');
+        }else{
+          getAction(httpurl, obj).then((res) => {
+            var data = res
+            console.log(data)
+            if(data.success) {
+              callback();
+            }else {
+              callback('数据库已有此字段，请不要重复添加!');
+            }
+          }).finally(() => {
+          })
+        }
+      },
+      // 保存数据
+      saveEdit(row) {
+        var id = row.orderNum-1
+        this.fields[id] = row
+      },
+      saveEditparams(row) {
+        var id = row.orderNum-1
+        this.params[id] = row
+      },
+      // 删除选中的rows
+      remove() {
+        var arr = this.selectedRowIds
+        arr.sort(function(a,b){
+          return  b - a;
+        })
+        for(var i = 0 ;  i < arr.length ; i++) {
+          this.fields.splice(arr[i]-1,1)
+        }
+        this.selectedRowIds = []
+      },
+      removeparams() {
+        var arr = this.selectedRowIds
+        arr.sort(function(a,b){
+          return  b - a;
+        })
+        for(var i = 0 ;  i < arr.length ; i++) {
+          this.params.splice(arr[i]-1,1)
+        }
+        this.selectedRowIds = []
+      },
+      // 获取选中的row
+      selectRows(rows) {
+        var arr =  []
+        for(var i = 0 ; i < rows.length ;  i++) {
+          arr.push(rows[i].orderNum)
+        }
+        this.selectedRowIds = arr
+      },
+      paramsadd() {
+        this.params.push({
+          orderNum: '',
+          paramName: "",
+          paramTxt: "",
+          paramValue: "",
+        })
+      },
+      selfadd() {
+        this.fields.push({
+          dictCode: "",
+          fieldHref: "",
+          fieldName: "",
+          fieldTxt: "",
+          fieldType: "String",
+          groupTitle: "",
+          isSearch: "0",
+          isShow: 1,
+          isTotal: "0",
+          orderNum: '',
+          replaceVal: "",
+          searchMode: "",
+        })
+      },
+      callback(key) {
+        console.log(key);
+      },
+      add() {
+        this.id = ''
+        this.edit({
+          cgrSql: "",
+          code: "",
+          name: "",
+          dbSource:''
+        });
+        this.sqlValue = ''
+        this.fields = []
+      },
+      edit(record) {
+        console.log(record)
+        this.id = record.id
+        if(record.id) {
+          // 获取下面的表单
+          getAction(this.url.head, {headId: record.id}).then((res) => {
+            console.log(res)
+            if (res.success) {
+              this.fields = res.result
+            } else {
+              this.$message.warning(res.message);
+            }
+          }).finally(() => {
+          })
+          getAction(this.url.param, {headId: record.id}).then((res) => {
+            console.log(res)
+            if (res.success) {
+              this.params = res.result
+            } else {
+              this.$message.warning(res.message);
+            }
+          }).finally(() => {
+          })
+        }
+
+        this.taskId =""
+        this.form.resetFields();
+        this.model = Object.assign({}, record);
+        this.visible = true;
+        this.sqlValue = record.cgrSql
+        this.$nextTick(() => {
+          this.form.setFieldsValue(pick(this.model,'code','name','dbSource','cgrSql'))
+        })
+      },
+      close() {
+        this.$emit('close');
+        this.visible = false;
+      },
+      handleOk() {
+        const that = this;
+        // 触发表单验证
+        this.form.validateFields((err, values) => {
+          if (!err) {
+            that.confirmLoading = true;
+            var obj = {
+              tableName: 'onl_cgreport_head',
+              fieldName: 'code',
+              fieldVal: that.form.getFieldValue('code'),
+            }
+            getAction(this.url.yanzheng, obj).then((res) => {
+              console.log(res)
+              if (res.success) {
+                let httpurl = '';
+                let method = '';
+                if (!this.model.id) {
+                  httpurl += this.url.add;
+                  method = 'post';
+                } else {
+                  httpurl += this.url.edit;
+                  method = 'put';
+                }
+                if(this.fields.length!=0&&this.params.length!=0) {
+
+                }
+                let formData = Object.assign(this.model, values);
+                console.log("表单提交数据", formData)
+                var obj = {
+                  deleteItemIds:"",
+                  deleteParamIds:"",
+                  head:Object.assign(this.model, values),
+                  items: this.fields,
+                  params:this.params
+                }
+                httpAction(httpurl, obj, method).then((res) => {
+                  if (res.success) {
+                    that.$message.success(res.message);
+                    that.$emit('ok');
+                  } else {
+                    that.$message.warning(res.message);
+                  }
+                }).finally(() => {
+                  that.confirmLoading = false;
+                  that.close();
+                })
+              } else {
+                this.$message.warning(res.message);
+              }
+            }).finally(() => {
+              that.confirmLoading = false;
+              that.close();
+            })
+
+          }
+
+        })
+      },
+      handleCancel() {
+        this.close()
+      },
+      popupCallback(row) {
+        this.form.setFieldsValue(pick(row, 'name'))
+      },
+
+    }
+  }
+  </script>
+  <style scoped>
+  .form-item {
+    margin-left: 15px
+  }
+
+  /deep/ .ant-form .ant-form-item {
+    margin-bottom: 0;
+  }
+
+  /deep/ .form-item {
+    margin-left: 0;
+  }
+
+  /deep/ .ant-form > .ant-row {
+    border-bottom: 1px solid #e8e8e8;
+    padding: 12px 0;
+  }
+
+  /deep/ .ant-form label {
+    font-size: 12px;
+  }
+  /deep/.tootle .ant-tooltip-inner {
+    background: #fff;
+  }
+  </style>
