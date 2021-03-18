@@ -6,30 +6,19 @@
         <a-row :gutter="48">
           <a-col :xl="5" :lg="6" :md="8" :sm="24">
             <a-form-item label="席位名称">
-              <a-input
+              <j-input
                 placeholder="请输入席位名称"
                 v-model="queryParam.seatName"
-              ></a-input>
+              ></j-input>
             </a-form-item>
           </a-col>
 
           <a-col :xl="5" :lg="6" :md="8" :sm="24">
-            <a-form-item label="模板名称">
-              <a-select
-                placeholder="请选择模板名称"
-                v-model="queryParam.modelName"
-              >
-                <a-select-option :value="item.id" v-for="(item,index) in templateList" :key="index">
-                  {{item.tableTxt}}
-                </a-select-option>
-                <!-- <a-select-option value="jack" v-for=""> Jack </a-select-option> -->
-              </a-select>
-
-
-              <!-- <j-input
+            <a-form-item label="模板数量">
+              <j-input
                 placeholder="请输入模板数量"
                 v-model="queryParam.count"
-              ></j-input> -->
+              ></j-input>
             </a-form-item>
           </a-col>
 
@@ -80,7 +69,7 @@
           style="text-align: center"
         >
           <!-- 未检查 -->
-          <a @click="handleEdit1(record)">选择模板</a>
+          <a @click="handleEdit(record)">选择模板</a>
         </span>
       </a-table>
     </div>
@@ -93,7 +82,6 @@ import { JeecgListMixin } from "@/mixins/JeecgListMixin";
 import "@/assets/less/TableExpand.less";
 import seatModuleListModule from "@views/zbtest/module/seatModuleListModule";
 import JInput from "@comp/jeecg/JInput";
-import {getAction} from "@api/manage";
 
 export default {
   name: "KgCrawlTaskList",
@@ -146,39 +134,13 @@ export default {
       ],
       url: {
         list: "/reportFormModel/getSeatList",
-        templateUrl:'/reportFormModel/queryAllModel1'
       },
       dictOptions: {},
       ids: "",
-      templateList:[]
     };
   },
-  created() {
-    this.getTemplateList()
-  },
   methods: {
-    handleEdit1(record) {
-      this.$refs.modalForm.edit(record);
-      this.$refs.modalForm.title = "关联模板";
-      this.$refs.modalForm.disableSubmit = false;
-    },
     // 模板勾选
-    // 获取模板类型
-    getTemplateList() {
-      var formData = {}
-      getAction(this.url.templateUrl, formData).then(res => {
-        if (res.success) {
-          // 将查询的数据赋值给 dataSource
-          this.templateList = res.result
-          // 重置选择
-        } else {
-          this.$error({title: '主表查询失败', content: res.message})
-        }
-      }).finally(() => {
-        // 这里是无论成功或失败都会执行的方法，在这里关闭loading
-        this.loading = false
-      })
-    },
     selectModel() {},
     modalFormOk() {
       this.loadData();

@@ -23,7 +23,11 @@
                 :disabled="istype"
                 placeholder="请选择采报模型"
               >
-                <a-select-option :value="item.headId" :key="index" v-for="(item,index) in templateList">
+                <a-select-option
+                  :value="item.headId"
+                  :key="index"
+                  v-for="(item, index) in templateList"
+                >
                   {{ item.headName }}
                 </a-select-option>
               </a-select>
@@ -274,8 +278,6 @@ export default {
       format: "YYYY-MM-DD",
       queryParam: {
         reportTime: currentdate,
-        reportFromType:'',
-        templateType:''
       },
       // 采包模板
       istype: true,
@@ -398,8 +400,8 @@ export default {
     },
     // 业务类型选择
     templateChange(e) {
-      console.log(e)
-      this.queryParam.templateType = e
+      console.log(e);
+      this.queryParam.templateType = e;
     },
     // 查看
     look(records) {

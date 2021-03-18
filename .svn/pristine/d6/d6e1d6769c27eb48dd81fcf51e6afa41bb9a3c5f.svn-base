@@ -270,9 +270,11 @@ export default {
       }
       if (info.file.status !== "uploading") {
         this.loading = false;
+        console.log(info);
+
         var res = info.file.response;
         if (res.success) {
-          this.loadData()
+          this.$message(`${info.file.name}上传成功！`);
         } else {
           this.$message.error(res.message);
         }

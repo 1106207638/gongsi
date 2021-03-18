@@ -56,7 +56,6 @@
         :multiple="false"
         :headers="tokenHeader"
         :action="url.uploadUrl"
-        @change="handlechange"
       >
         <a-button type="primary" icon="import">上传文件</a-button>
       </a-upload>
@@ -264,28 +263,7 @@ export default {
     },
   },
   methods: {
-    handlechange(info) {
-      if (info.file.status == "uploading") {
-        this.loading = true;
-      }
-      if (info.file.status !== "uploading") {
-        this.loading = false;
-        var res = info.file.response;
-        if (res.success) {
-          this.loadData()
-        } else {
-          this.$message.error(res.message);
-        }
-      }
-      if (info.file.status === "done") {
-      } else if (info.file.status === "error") {
-        this.$message.error(`${info.file.name}上传失败！`);
-      }
-    },
     initDictConfig() {},
-    // if(putword.){
-
-    // }
     getSuperFieldList() {
       let fieldList = [];
       fieldList.push({

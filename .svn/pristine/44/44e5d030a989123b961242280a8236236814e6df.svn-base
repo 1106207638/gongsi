@@ -80,7 +80,7 @@
           style="text-align: center"
         >
           <!-- 未检查 -->
-          <a @click="handleEdit1(record)">选择模板</a>
+          <a @click="handleEdit(record)">选择模板</a>
         </span>
       </a-table>
     </div>
@@ -157,11 +157,6 @@ export default {
     this.getTemplateList()
   },
   methods: {
-    handleEdit1(record) {
-      this.$refs.modalForm.edit(record);
-      this.$refs.modalForm.title = "关联模板";
-      this.$refs.modalForm.disableSubmit = false;
-    },
     // 模板勾选
     // 获取模板类型
     getTemplateList() {
