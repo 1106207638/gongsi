@@ -22,26 +22,27 @@
         </a-button>
         <div class="scroll-box">
           <div
-            v-for="(item, index) in sbList"
+            v-for="(item, index) in templateList"
+            :key="index"
             :class="index == activeIndex ? 'sb-item active' : 'sb-item'"
-            @click="toggleSb(index)"
+            @click="toggletemplate(item, index)"
           >
-            {{ item }}
+            {{ item.modelName }}
           </div>
         </div>
       </div>
     </div>
     <div class="card-box" style="width: 60%">
       <div class="box-title">数据展示: 报文名称报文名称.doc</div>
-      <div class="box-content" id="center">
-        <p>123</p>
+      <div class="box-content" id="center" v-html="centerHTML">
+        <!-- <p>123</p>
         <a data-point="1">x个</a>
         <p>123</p>
         <a data-point="2">x个</a>
         <p>123</p>
         <a data-point="3">x个</a>
         <p>123</p>
-        <a data-point="4">x个</a>
+        <a data-point="4">x个</a> -->
       </div>
     </div>
     <div class="card-box" style="width: 20%">
@@ -172,6 +173,7 @@
 
 <script>
 import JEditor from "../../components/jeecg/JEditor.vue";
+import { getAction, postAction } from "@api/manage";
 
 export default {
   name: "bbsc",
@@ -180,19 +182,16 @@ export default {
   },
   data() {
     return {
+      centerHTML: "",
+      url: {
+        templateUrl: "/southDataModel/list",
+      },
       indexStyle: 1,
       queryParam: {},
       activeIndex: 0,
       sql:
         "const char *mysql-sqlstate(MYSQL*mysql)const char *mysql-sqlstate(MYSQL*mysql)const char *mysql-sqlstate(MYSQL*mysql)",
-      sbList: [
-        "报表名称1",
-        "报表名称2",
-        "报表名称3",
-        "报表名称4",
-        "报表名称5",
-        "报表名称6",
-      ],
+      templateList: [],
       treeData: [
         { title: "Expand to load", key: "0" },
         { title: "Expand to load", key: "1" },
@@ -202,6 +201,7 @@ export default {
   },
   created() {},
   mounted() {
+    this.getTemplateList();
     var as = document.getElementById("center").getElementsByTagName("a");
     for (var i = 0; i < as.length; i++) {
       as[i].onclick = function (e) {
@@ -210,6 +210,16 @@ export default {
     }
   },
   methods: {
+    // 获取左侧模板列表
+    getTemplateList() {
+      var params = {};
+      getAction(this.url.templateUrl, params).then((res) => {
+        if (res.success) {
+          this.templateList = res.result.records;
+          this.centerHTML = res.result.records[0].modelHtmlCententUrl;
+        }
+      });
+    },
     onLoadData(treeNode) {
       return new Promise((resolve) => {
         if (treeNode.dataRef.children) {
@@ -229,10 +239,11 @@ export default {
     callback(key) {
       console.log(key);
     },
-    toggleSb(index) {
+    toggletemplate(obj, index) {
       if (index == this.activeIndex) {
       } else {
         this.activeIndex = index;
+        this.centerHTML = obj.modelHtmlCententUrl;
       }
     },
   },
