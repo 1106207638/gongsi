@@ -4,7 +4,6 @@
     <div class="table-page-search-wrapper">
       <a-form layout="inline">
         <a-row :gutter="48">
-
           <a-col :xl="5" :lg="6" :md="8" :sm="24">
             <a-form-item label="检查方式">
               <j-dict-select-tag
@@ -15,23 +14,18 @@
               />
             </a-form-item>
           </a-col>
-
           <a-col :xl="5" :lg="6" :md="8" :sm="24">
             <a-form-item label="检查状态">
-               <a-select  style="width:100%" placeholder="请选择任务状态"  v-model="queryParam.checkStatus">
-                  
-                  <a-select-option value="Check">
-                      已检查
-                  </a-select-option>
-                  <a-select-option value="NotCheck">
-                      未检查
-                  </a-select-option>
-
-                  
+              <a-select
+                style="width: 100%"
+                placeholder="请选择任务状态"
+                v-model="queryParam.checkStatus"
+              >
+                <a-select-option value="Check"> 已检查 </a-select-option>
+                <a-select-option value="NotCheck"> 未检查 </a-select-option>
               </a-select>
             </a-form-item>
           </a-col>
-
           <a-col :xl="5" :lg="6" :md="8" :sm="24">
             <a-form-item label="执行时间">
               <j-date
@@ -137,19 +131,16 @@
 
 <script>
 import "@/assets/less/TableExpand.less";
-
 import ATextarea from "ant-design-vue/es/input/TextArea";
 import AInput from "ant-design-vue/es/input/Input";
 import { JeecgListMixin } from "@/mixins/JeecgListMixin";
 import { mixinDevice } from "@/utils/mixin";
-
 import moment from "moment";
 import axios from "axios";
 import JDictSelectTag from "@/components/dict/JDictSelectTag.vue";
 import { getRoleList } from "@/api/manage";
 import addModule from "./module/zbjcaddModal";
 import editionModal from "./module/zbjceditionModal";
-
 export default {
   name: "cblb",
   mixins: [JeecgListMixin, mixinDevice],
@@ -311,7 +302,7 @@ export default {
   },
   watch: {
     $route: function (newVal, oldVal) {
-      this.searchQuery()
+      this.searchQuery();
     },
   },
 };

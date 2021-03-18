@@ -1,0 +1,153 @@
+<template>
+  <a-card :bordered="false">
+    <!-- 查询 -->
+    <div class="table-page-search-wrapper">
+      <a-form layout="inline" style="margin-left: 50px">
+        <a-row :gutter="48">
+          <a-col :xl="5" :lg="6" :md="8" :sm="24">
+            <a-form-item label="席位名称">
+              <j-input
+                placeholder="请输入席位名称"
+                v-model="queryParam.seatName"
+              ></j-input>
+            </a-form-item>
+          </a-col>
+
+          <a-col :xl="5" :lg="6" :md="8" :sm="24">
+            <a-form-item label="模板数量">
+              <j-input
+                placeholder="请输入模板数量"
+                v-model="queryParam.count"
+              ></j-input>
+            </a-form-item>
+          </a-col>
+
+          <a-col :xl="6" :lg="7" :md="8" :sm="24">
+            <span
+              style="float: left; overflow: hidden"
+              class="table-page-search-submitButtons"
+            >
+              <a-button type="primary" @click="searchQuery" icon="search"
+                >查询</a-button
+              >
+              <a-button
+                type="primary"
+                @click="searchReset"
+                icon="reload"
+                style="margin-left: 8px"
+                >重置</a-button
+              >
+            </span>
+          </a-col>
+        </a-row>
+      </a-form>
+    </div>
+    <!-- table区域-begin -->
+    <div>
+      <a-table
+        ref="table"
+        size="middle"
+        bordered
+        rowKey="id"
+        class="j-table-force-nowrap"
+        :columns="columns"
+        :dataSource="dataSource"
+        :pagination="false"
+        :loading="loading"
+        :rowSelection="{
+          selectedRowKeys: selectedRowKeys,
+          onChange: onSelectChange,
+        }"
+        @change="handleTableChange"
+      >
+        <template slot="htmlSlot" slot-scope="text">
+          <div v-html="text"></div>
+        </template>
+        <span
+          slot="action"
+          slot-scope="text, record"
+          style="text-align: center"
+        >
+          <!-- 未检查 -->
+          <a @click="handleEdit(record)">选择模板</a>
+        </span>
+      </a-table>
+    </div>
+    <seatModuleListModule ref="modalForm" @ok="modalFormOk" />
+  </a-card>
+</template>
+
+<script>
+import { JeecgListMixin } from "@/mixins/JeecgListMixin";
+import "@/assets/less/TableExpand.less";
+import seatModuleListModule from "@views/zbtest/module/seatModuleListModule";
+import JInput from "@comp/jeecg/JInput";
+
+export default {
+  name: "KgCrawlTaskList",
+  mixins: [JeecgListMixin],
+  components: {
+    JInput,
+    seatModuleListModule,
+  },
+  data() {
+    return {
+      downloadUrl: window._CONFIG["domianURL"],
+      description: "kg_crawl_task管理页面",
+      // 表头
+      columns: [
+        {
+          title: "#",
+          dataIndex: "",
+          key: "rowIndex",
+          width: 60,
+          align: "center",
+          customRender: function (t, r, index) {
+            return parseInt(index) + 1;
+          },
+        },
+        {
+          title: "席位名称",
+          align: "center",
+          dataIndex: "name",
+        },
+        {
+          title: "模板名称",
+          align: "center",
+          dataIndex: "data",
+          customRender: function (t, r, index) {
+            console.log(t);
+            var str = [];
+            for (var i = 0; i < t.length; i++) {
+              str.push(t[i].headName);
+            }
+            var str = str.join(",");
+            return str;
+          },
+        },
+        {
+          title: "操作",
+          dataIndex: "action",
+          align: "center",
+          scopedSlots: { customRender: "action" },
+        },
+      ],
+      url: {
+        list: "/reportFormModel/getSeatList",
+      },
+      dictOptions: {},
+      ids: "",
+    };
+  },
+  methods: {
+    // 模板勾选
+    selectModel() {},
+    modalFormOk() {
+      this.loadData();
+    },
+  },
+};
+</script>
+<style scoped>
+@import "~@assets/less/common.less";
+</style>
