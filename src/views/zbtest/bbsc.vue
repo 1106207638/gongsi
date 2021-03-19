@@ -45,7 +45,11 @@
               <div class="card-content">
                 <div class="left">选择数据</div>
                 <div class="right">
-                  <a-tree :load-data="onLoadData" :tree-data="treeData" />
+                  <a-tree
+                    :load-data="onLoadData"
+                    :tree-data="treeData"
+                    @select="select"
+                  />
                 </div>
               </div>
               <a-form :label-col="{ span: 7 }" :wrapper-col="{ span: 10 }">
@@ -201,6 +205,12 @@ export default {
       },
       deep: true,
     },
+    sql: {
+      handler(sq, oldsq) {
+        this.sql = sq;
+      },
+      deep: true,
+    },
   },
   mounted() {
     this.getTemplateList();
@@ -212,6 +222,7 @@ export default {
   },
   methods: {
     callback(e) {},
+
     // 获取左侧模板列表
 
     getTemplateList() {
@@ -225,7 +236,6 @@ export default {
     },
 
     onLoadData(treeNode) {
-      console.log(treeNode);
       return new Promise((resolve) => {
         if (treeNode.dataRef.children) {
           resolve();
@@ -243,6 +253,7 @@ export default {
               }
               treeNode.dataRef.children = result;
               this.treeData = [...this.treeData];
+              // this.sql = res.result.records[0].onlSql;
               resolve();
             }
           })
@@ -259,7 +270,6 @@ export default {
     //右侧菜单
     getParentList() {
       getAction(this.url.ParentUrl, {}).then((res) => {
-        // this.parentList = res.result.records[0].dataTypeName;
         if (res.success) {
           var result = res.result.records;
           for (var i = 0; i < result.length; i++) {
@@ -269,6 +279,13 @@ export default {
           this.treeData = result;
         }
       });
+    },
+    // SQL语句添加
+    select(id, e) {
+      let sqlContent = e.node.dataRef.onlSql;
+      if (sqlContent) {
+        this.sql = sqlContent;
+      }
     },
   },
 };
