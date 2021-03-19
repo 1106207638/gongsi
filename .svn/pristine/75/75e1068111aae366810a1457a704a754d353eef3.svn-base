@@ -211,12 +211,15 @@ export default {
     }
   },
   methods: {
-    callback(e) {},
+    callback(e) {
+      console.log(e);
+    },
     // 获取左侧模板列表
 
     getTemplateList() {
       var params = {};
       getAction(this.url.templateUrl, params).then((res) => {
+        console.log(res);
         if (res.success) {
           this.templateList = res.result.records;
           this.centerHTML = res.result.records[0].modelHtmlCententUrl;
@@ -225,7 +228,6 @@ export default {
     },
 
     onLoadData(treeNode) {
-      console.log(treeNode);
       return new Promise((resolve) => {
         if (treeNode.dataRef.children) {
           resolve();
@@ -259,6 +261,7 @@ export default {
     //右侧菜单
     getParentList() {
       getAction(this.url.ParentUrl, {}).then((res) => {
+        console.log(res.result.records);
         // this.parentList = res.result.records[0].dataTypeName;
         if (res.success) {
           var result = res.result.records;

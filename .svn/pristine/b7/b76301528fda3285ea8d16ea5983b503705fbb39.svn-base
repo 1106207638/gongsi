@@ -22,23 +22,31 @@
         </a-button>
         <div class="scroll-box">
           <div
-            v-for="(item, index) in templateList"
-            :key="index"
+            v-for="(item, index) in sbList"
             :class="index == activeIndex ? 'sb-item active' : 'sb-item'"
-            @click="toggletemplate(item, index)"
+            @click="toggleSb(index)"
           >
-            {{ item.modelName }}
+            {{ item }}
           </div>
         </div>
       </div>
     </div>
     <div class="card-box" style="width: 60%">
       <div class="box-title">数据展示: 报文名称报文名称.doc</div>
-      <div class="box-content" id="center" v-html="centerHTML"></div>
+      <div class="box-content" id="center">
+        <p>123</p>
+        <a data-point="1">x个</a>
+        <p>123</p>
+        <a data-point="2">x个</a>
+        <p>123</p>
+        <a data-point="3">x个</a>
+        <p>123</p>
+        <a data-point="4">x个</a>
+      </div>
     </div>
     <div class="card-box" style="width: 20%">
       <div class="box-title">数据库配置</div>
-      <div class="box-content" v-if="isConfiguration">
+      <div class="box-content">
         <div class="card-container">
           <a-tabs type="card" @change="callback">
             <a-tab-pane key="1" tab="已有数据">
@@ -163,8 +171,7 @@
 </template>
 
 <script>
-import JEditor from "../../components/jeecg/JEditor.vue";
-import { getAction, postAction } from "@api/manage";
+import JEditor from "../../../components/jeecg/JEditor.vue";
 
 export default {
   name: "bbsc",
@@ -173,102 +180,60 @@ export default {
   },
   data() {
     return {
-      centerHTML: "",
-      url: {
-        templateUrl: "/southDataModel/list",
-        ParentUrl: "/southDataClassify/rootList",
-        childrenUrl: "/southDataClassify/childList",
-      },
-      isConfiguration: true,
       indexStyle: 1,
       queryParam: {},
       activeIndex: 0,
       sql:
         "const char *mysql-sqlstate(MYSQL*mysql)const char *mysql-sqlstate(MYSQL*mysql)const char *mysql-sqlstate(MYSQL*mysql)",
-      templateList: [],
+      sbList: [
+        "报表名称1",
+        "报表名称2",
+        "报表名称3",
+        "报表名称4",
+        "报表名称5",
+        "报表名称6",
+      ],
       treeData: [
-        { title: "11111111", key: "0" },
+        { title: "Expand to load", key: "0" },
         { title: "Expand to load", key: "1" },
         { title: "Tree Node", key: "2", isLeaf: true },
       ],
     };
   },
   created() {},
-  watch: {
-    treeData: {
-      handler: function (val, oldVal) {
-        this.treeData = val;
-      },
-      deep: true,
-    },
-  },
   mounted() {
-    this.getTemplateList();
-    this.getParentList();
     var as = document.getElementById("center").getElementsByTagName("a");
     for (var i = 0; i < as.length; i++) {
-      as[i].onclick = function (e) {};
+      as[i].onclick = function (e) {
+        console.log(e.target.dataset.point);
+      };
     }
   },
   methods: {
-    callback(e) {},
-    // 获取左侧模板列表
-
-    getTemplateList() {
-      var params = {};
-      getAction(this.url.templateUrl, params).then((res) => {
-        if (res.success) {
-          this.templateList = res.result.records;
-          this.centerHTML = res.result.records[0].modelHtmlCententUrl;
-        }
-      });
-    },
-
     onLoadData(treeNode) {
-      console.log(treeNode);
       return new Promise((resolve) => {
         if (treeNode.dataRef.children) {
           resolve();
           return;
         }
-        var id = treeNode.dataRef.id;
-        getAction(this.url.childrenUrl, { pdataId: id })
-          .then((res) => {
-            if (res.success) {
-              var result = res.result.records;
-              for (var i = 0; i < result.length; i++) {
-                result[i].title = result[i].dataTypeName;
-                result[i].key = result[i].id;
-                result[i].isLeaf = true;
-              }
-              treeNode.dataRef.children = result;
-              this.treeData = [...this.treeData];
-              resolve();
-            }
-          })
-          .finally(() => {});
+        setTimeout(() => {
+          treeNode.dataRef.children = [
+            { title: "Child Node", key: `${treeNode.eventKey}-0` },
+            { title: "Child Node", key: `${treeNode.eventKey}-1` },
+          ];
+          this.treeData = [...this.treeData];
+          resolve();
+        }, 1000);
       });
     },
-    toggletemplate(obj, index) {
+    callback(key) {
+      console.log(key);
+    },
+    toggleSb(index) {
       if (index == this.activeIndex) {
       } else {
         this.activeIndex = index;
-        this.centerHTML = obj.modelHtmlCententUrl;
       }
-    },
-    //右侧菜单
-    getParentList() {
-      getAction(this.url.ParentUrl, {}).then((res) => {
-        // this.parentList = res.result.records[0].dataTypeName;
-        if (res.success) {
-          var result = res.result.records;
-          for (var i = 0; i < result.length; i++) {
-            result[i].title = result[i].dataTypeName;
-            result[i].key = result[i].id;
-          }
-          this.treeData = result;
-        }
-      });
     },
   },
 };
